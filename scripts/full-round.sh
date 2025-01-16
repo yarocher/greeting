@@ -16,30 +16,25 @@ aapt package -m -J ${BUILD_DIR}/generated -M AndroidManifest.xml -S res -I ${AND
 javac -d ${BUILD_DIR}/classes -cp ${ANDROID_JAR} $(find ${BUILD_DIR}/generated/ src/main/java/ -type f -name '*.java')
 
 # 3. Convert .class files into .dex files
-d8 --no-desugaring --output ${BUILD_DIR}/dex/classes.jar $(find ${BUILD_DIR}/classes -type f -name '*.class')
+d8 --no-desugaring --output ${BUILD_DIR}/dex $(find ${BUILD_DIR}/classes -type f -name '*.class')
 
-# 4. Merge android.jar with classes.jar
-cd ${BUILD_DIR}/dex
-	d8 ${ANDROID_JAR} classes.jar	
-cd -
-
-# 5. Package unaligned unsigned APK
+# 4. Package unaligned unsigned APK
 aapt package -M AndroidManifest.xml -F ${BUILD_DIR}/apk/greeting.unaligned.apk -S res -I ${ANDROID_JAR} ${BUILD_DIR}/dex/
 
-# 6. Align APK
+# 5. Align APK
 zipalign -p 4 ${BUILD_DIR}/apk/greeting.{unaligned,unsigned}.apk
 
-# 7. Generate keypair
+# 6. Generate keypair
 keytool -genkeypair -keystore ${BUILD_DIR}/jks/keystore.jks -alias androidkey -dname "CN=ychernysh.org, OU=ID, O=YCHERNYSH, L=Abc, S=Xyz, C=GB" -validity 10000 -keyalg RSA -keysize 2048 -storepass android -keypass android
 
-# 8. Asign APK
+# 7. Sign APK
 apksigner sign --ks ${BUILD_DIR}/jks/keystore.jks --ks-key-alias androidkey --ks-pass pass:android --key-pass pass:android --out ${BUILD_DIR}/apk/greeting.apk ${BUILD_DIR}/apk/greeting.unsigned.apk
 
-# 9. Uninstall package from device
+# 8. Uninstall package from device
 adb uninstall org.ychernysh.greeting
 
-# 10. Install package on device
+# 9. Install package on device
 adb install build/apk/greeting.apk
 
-# 11. Launch the app on device
+# 10. Launch the app on device
 adb shell am start -n org.ychernysh.greeting/.GreetingActivity
